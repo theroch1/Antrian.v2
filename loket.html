@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Panel Operator V2 (Firebase)</title>
+  <title>Panel Operator V2.2</title>
   
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -11,71 +11,70 @@
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     body { background-color: #f2f2f7; color: #1c1c1e; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; padding: 16px; }
-    .container { background: #ffffff; width: 100%; max-width: 420px; border-radius: 24px; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.08); display: flex; flex-direction: column; gap: 16px; }
+    .container { background: #ffffff; width: 100%; max-width: 420px; border-radius: 24px; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.08); display: flex; flex-direction: column; gap: 14px; }
     
-    .setup-screen { display: flex; flex-direction: column; gap: 16px; text-align: center; padding: 10px 0; }
-    .setup-title { font-size: 20px; font-weight: 800; color: #1c1c1e; }
-    .setup-sub { font-size: 14px; color: #8e8e93; }
-    .grid-loket-btn { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 10px; }
-    .btn-select-loket { background: #007aff; color: white; border: none; padding: 18px; border-radius: 16px; font-size: 18px; font-weight: 800; cursor: pointer; }
+    .setup-screen { display: flex; flex-direction: column; gap: 14px; text-align: center; }
+    .setup-title { font-size: 20px; font-weight: 800; }
+    .grid-loket-btn { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 10px; }
+    .btn-select-loket { background: #007aff; color: white; border: none; padding: 16px; border-radius: 14px; font-size: 16px; font-weight: 800; cursor: pointer; }
     
-    .loket-header-bar { display: flex; justify-content: space-between; align-items: center; background: #e5f1ff; padding: 12px 16px; border-radius: 14px; border: 1px solid #b3d7ff; }
-    .loket-active-title { font-size: 18px; font-weight: 800; color: #007aff; }
-    .btn-change-loket { background: transparent; border: 1px solid #007aff; color: #007aff; font-size: 12px; font-weight: 700; padding: 6px 10px; border-radius: 8px; cursor: pointer; }
+    .loket-header-bar { display: flex; justify-content: space-between; align-items: center; background: #e5f1ff; padding: 10px 14px; border-radius: 12px; border: 1px solid #b3d7ff; }
+    .loket-active-title { font-size: 16px; font-weight: 800; color: #007aff; }
+    .btn-change-loket { background: white; border: 1px solid #007aff; color: #007aff; font-size: 12px; font-weight: 700; padding: 6px 10px; border-radius: 8px; cursor: pointer; }
     
-    .display-box { background: #f2f2f7; border-radius: 16px; padding: 16px; text-align: center; }
-    .num-serving { font-size: 56px; font-weight: 800; color: #007aff; line-height: 1; margin-top: 6px; }
-    .skipped-box { background: #fff9e6; border: 1px solid #ffe082; border-radius: 14px; padding: 12px; }
-    .skipped-title { font-size: 12px; font-weight: 700; color: #b78103; margin-bottom: 8px; text-transform: uppercase; }
-    .skipped-list { display: flex; flex-wrap: wrap; gap: 8px; }
-    .skipped-btn { background: #ff9500; color: white; border: none; padding: 8px 14px; border-radius: 20px; font-weight: 800; font-size: 15px; cursor: pointer; }
+    .display-box { background: #f2f2f7; border-radius: 14px; padding: 14px; text-align: center; }
+    .num-serving { font-size: 52px; font-weight: 800; color: #007aff; line-height: 1; margin-top: 4px; }
+    
+    .skipped-box { background: #fff9e6; border: 1px solid #ffe082; border-radius: 12px; padding: 10px; }
+    .skipped-title { font-size: 11px; font-weight: 700; color: #b78103; margin-bottom: 6px; text-transform: uppercase; }
+    .skipped-list { display: flex; flex-wrap: wrap; gap: 6px; }
+    .skipped-btn { background: #ff9500; color: white; border: none; padding: 6px 12px; border-radius: 16px; font-weight: 800; font-size: 14px; cursor: pointer; }
     .skipped-empty { font-size: 12px; color: #a1887f; font-style: italic; }
     
-    .actions { display: flex; flex-direction: column; gap: 10px; }
-    .btn { width: 100%; padding: 16px; border: none; border-radius: 14px; font-size: 16px; font-weight: 700; cursor: pointer; }
+    .actions { display: flex; flex-direction: column; gap: 8px; }
+    .btn { width: 100%; padding: 14px; border: none; border-radius: 12px; font-size: 15px; font-weight: 700; cursor: pointer; }
     .btn-next { background: #34c759; color: white; }
     .btn-skip { background: #ff9500; color: white; }
     .btn-recall { background: #007aff; color: white; }
     
-    /* KUNCI TOMBOL ANTI-SPAM */
     .btn:disabled, .btn-manual:disabled, .btn-reset:disabled, .skipped-btn:disabled {
-      background: #8e8e93 !important;
-      color: #ffffff !important;
-      opacity: 0.7 !important;
-      cursor: not-allowed !important;
+      background: #8e8e93 !important; color: #ffffff !important; opacity: 0.7 !important; cursor: not-allowed !important;
     }
 
-    .manual-box { padding-top: 12px; border-top: 1px solid #e5e5ea; display: flex; gap: 8px; align-items: center; }
-    .manual-box input { flex: 1; padding: 12px; border-radius: 10px; border: 1px solid #ccc; font-size: 15px; }
-    .btn-manual { padding: 12px 16px; border-radius: 10px; border: none; background: #5856d6; color: white; font-weight: 700; cursor: pointer; }
-    
-    .reset-box { padding-top: 8px; border-top: 1px solid #e5e5ea; margin-top: 4px; }
-    .btn-reset { background: #ff3b30; color: white; font-size: 14px; padding: 12px; width: 100%; border: none; border-radius: 10px; font-weight: bold; }
+    .box-input-group { border-top: 1px solid #e5e5ea; padding-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+    .label-input { font-size: 11px; font-weight: 700; color: #8e8e93; text-transform: uppercase; }
+    .input-row { display: flex; gap: 8px; }
+    .input-row input { flex: 1; padding: 10px; border-radius: 8px; border: 1px solid #ccc; font-size: 14px; }
+    .btn-manual { padding: 10px 14px; border-radius: 8px; border: none; background: #5856d6; color: white; font-weight: 700; cursor: pointer; }
+    .btn-set-start { padding: 10px 14px; border-radius: 8px; border: none; background: #ff9500; color: white; font-weight: 700; cursor: pointer; }
+
+    .btn-reset { background: #ff3b30; color: white; font-size: 13px; padding: 10px; width: 100%; border: none; border-radius: 8px; font-weight: bold; margin-top: 6px; }
   </style>
 </head>
 <body>
 
   <div class="container">
     
+    <!-- LAYAR PILIH LOKET OPERATOR -->
     <div id="screenSetup" class="setup-screen">
       <div class="setup-title">Pilih Loket Operator</div>
-      <div class="setup-sub">Sistem Antrean Realtime V2</div>
       <div class="grid-loket-btn" id="gridLoketContainer"></div>
     </div>
 
-    <div id="screenOperator" style="display: none; flex-direction: column; gap: 16px;">
+    <!-- LAYAR UTAMA OPERATOR -->
+    <div id="screenOperator" style="display: none; flex-direction: column; gap: 12px;">
       <div class="loket-header-bar">
         <div class="loket-active-title" id="textActiveLoket">LOKET 1</div>
-        <button class="btn-change-loket" onclick="gantiLoket()">Ganti Loket</button>
+        <button class="btn-change-loket" onclick="gantiLoket()">🔄 Ganti / Pilih Loket</button>
       </div>
 
       <div class="display-box">
-        <div style="font-size: 11px; color: #8e8e93; font-weight: 700; letter-spacing: 1px;">SEDANG DILAYANI LOKET INI</div>
+        <div style="font-size: 11px; color: #8e8e93; font-weight: 700;">SEDANG DILAYANI LOKET INI</div>
         <div class="num-serving" id="numServing">-</div>
       </div>
 
       <div class="skipped-box">
-        <div class="skipped-title">⚠️ KLIK UNTUK PANGGIL NOMOR DILEWATI:</div>
+        <div class="skipped-title">⚠️ NOMOR DILEWATI (TAP UNTUK PANGGIL):</div>
         <div class="skipped-list" id="skippedContainer">
           <span class="skipped-empty">Tidak ada nomor dilewati</span>
         </div>
@@ -87,20 +86,30 @@
         <button class="btn btn-recall" id="btnRecall" onclick="panggilRecall()">PANGGIL ULANG</button>
       </div>
 
-      <div class="manual-box">
-        <input type="number" id="manualNum" placeholder="No. Spesifik">
-        <button class="btn-manual" id="btnManual" onclick="panggilManual()">PANGGIL</button>
+      <!-- FITUR SET START NOMOR -->
+      <div class="box-input-group">
+        <div class="label-input">Mulai Panggil Antrean Dari Nomor Berapa:</div>
+        <div class="input-row">
+          <input type="number" id="startNumInput" placeholder="Contoh: 50">
+          <button class="btn-set-start" id="btnSetStart" onclick="setMulaiNomor()">SET START</button>
+        </div>
       </div>
 
-      <div class="reset-box">
-        <button class="btn btn-reset" id="btnReset" onclick="konfirmasiReset()">🔄 RESET SEMUA ANTREAN KE 0</button>
+      <!-- PANGGIL NOMOR SPESIFIK -->
+      <div class="box-input-group">
+        <div class="label-input">Panggil Nomor Khusus/Spesifik:</div>
+        <div class="input-row">
+          <input type="number" id="manualNum" placeholder="No. Khusus">
+          <button class="btn-manual" id="btnManual" onclick="panggilManual()">PANGGIL</button>
+        </div>
       </div>
+
+      <button class="btn-reset" onclick="konfirmasiReset()">🔄 RESET SEMUA ANTREAN KE 0</button>
     </div>
 
   </div>
 
   <script>
-    // 1. CONFIG FIREBASE V2
     const firebaseConfig = {
   apiKey: "AIzaSyC9GO9C09OchmPPh8nvjKDaKH_iyx7Navo",
   authDomain: "antrian-v2.firebaseapp.com",
@@ -121,8 +130,6 @@
 
     window.onload = function() {
       if (selectedLoket) showOperatorPanel();
-      
-      // Sync Realtime
       refAntrean.on('value', (snapshot) => {
         globalData = snapshot.val() || {};
         renderUI();
@@ -139,24 +146,15 @@
 
         const skipped = globalData.skipped || [];
         const container = document.getElementById('skippedContainer');
-        if (skipped.length > 0) {
-          container.innerHTML = skipped.map(num => 
-            `<button class="skipped-btn" onclick="panggilTerlewat(${num})">No. ${num}</button>`
-          ).join('');
-        } else {
-          container.innerHTML = '<span class="skipped-empty">Tidak ada nomor dilewati</span>';
-        }
+        container.innerHTML = skipped.length > 0 ? skipped.map(num => `<button class="skipped-btn" onclick="panggilTerlewat(${num})">No. ${num}</button>`).join('') : '<span class="skipped-empty">Tidak ada nomor dilewati</span>';
       }
     }
 
     function renderSetupButtons(total) {
       const container = document.getElementById('gridLoketContainer');
-      if (container.children.length === total) return;
       container.innerHTML = '';
       for (let i = 1; i <= total; i++) {
-        const isLastOdd = (i === total && total % 2 !== 0);
-        const style = isLastOdd ? 'style="grid-column: span 2;"' : '';
-        container.innerHTML += `<button class="btn-select-loket" ${style} onclick="pilihLoket(${i})">LOKET ${i}</button>`;
+        container.innerHTML += `<button class="btn-select-loket" onclick="pilihLoket(${i})">LOKET ${i}</button>`;
       }
     }
 
@@ -167,12 +165,10 @@
     }
 
     function gantiLoket() {
-      if (confirm("Ingin berpindah ke loket lain?")) {
-        localStorage.removeItem('operatorLoket');
-        selectedLoket = null;
-        document.getElementById('screenOperator').style.display = 'none';
-        document.getElementById('screenSetup').style.display = 'flex';
-      }
+      localStorage.removeItem('operatorLoket');
+      selectedLoket = null;
+      document.getElementById('screenOperator').style.display = 'none';
+      document.getElementById('screenSetup').style.display = 'flex';
     }
 
     function showOperatorPanel() {
@@ -182,7 +178,6 @@
       renderUI();
     }
 
-    // FUNGSI LOCK BUTTON ANTI-SPAM (Kunci 1,2 detik per panggil)
     function lockButtons() {
       isProcessing = true;
       document.getElementById('btnNext').disabled = true;
@@ -212,6 +207,21 @@
         loketData: loketData,
         lastCall: { nomor: nextNum, loket: selectedLoket, timestamp: Date.now() }
       });
+    }
+
+    function setMulaiNomor() {
+      if (isProcessing) return;
+      const startNum = parseInt(document.getElementById('startNumInput').value);
+      if (startNum && startNum > 0) {
+        if (confirm(`Atur antrean agar panggilan berikutnya dimulai dari nomor ${startNum}?`)) {
+          lockButtons();
+          refAntrean.update({
+            globalCounter: startNum - 1
+          });
+          document.getElementById('startNumInput').value = '';
+          alert(`Berhasil! Tekan BERIKUTNYA untuk memanggil nomor ${startNum}.`);
+        }
+      }
     }
 
     function panggilSkip() {
