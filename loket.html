@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Panel Operator V2.2</title>
+  <title>Panel Operator V2.3</title>
   
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -209,48 +209,54 @@
       });
     }
 
-    function setMulaiNomor() {
-      if (isProcessing) return;
-      const startNum = parseInt(document.getElementById('startNumInput').value);
-      if (startNum && startNum > 0) {
-        if (confirm(`Atur antrean agar panggilan berikutnya dimulai dari nomor ${startNum}?`)) {
-          lockButtons();
-          refAntrean.update({
-            globalCounter: startNum - 1
-          });
-          document.getElementById('startNumInput').value = '';
-          alert(`Berhasil! Tekan BERIKUTNYA untuk memanggil nomor ${startNum}.`);
-        }
-      }
-    }
-
+    // UPDATE LOGIKA TOMBOL LEWATI (V2.3)
     function panggilSkip() {
       if (isProcessing) return;
-      lockButtons();
 
       const currentNum = (globalData.loketData || {})[selectedLoket];
+      if (!currentNum || currentNum <= 0) {
+        alert("Belum ada nomor yang aktif di loket ini.");
+        return;
+      }
+
+      lockButtons();
+
       let skipped = globalData.skipped || [];
-      if (currentNum && !skipped.includes(currentNum)) {
+      if (!skipped.includes(currentNum)) {
         skipped.push(currentNum);
         skipped.sort((a, b) => a - b);
       }
 
-      const nextNum = (globalData.globalCounter || 0) + 1;
-      const loketData = globalData.loketData || {};
-      loketData[selectedLoket] = nextNum;
+      const globalCounter = globalData.globalCounter || 0;
 
-      refAntrean.update({
-        globalCounter: nextNum,
-        skipped: skipped,
-        loketData: loketData,
-        lastCall: { nomor: nextNum, loket: selectedLoket, timestamp: Date.now() }
-      });
+      // Jika nomor yang sedang di-skip adalah nomor terlewat/panggilan lama (kurang dari globalCounter)
+      if (currentNum < globalCounter) {
+        const loketData = globalData.loketData || {};
+        loketData[selectedLoket] = "-"; // Reset status loket jadi kosong dulu
+
+        refAntrean.update({
+          skipped: skipped,
+          loketData: loketData
+        });
+      } else {
+        // Jika nomor yang di-skip adalah urutan paling baru, lanjut panggil urutan berikutnya
+        const nextNum = globalCounter + 1;
+        const loketData = globalData.loketData || {};
+        loketData[selectedLoket] = nextNum;
+
+        refAntrean.update({
+          globalCounter: nextNum,
+          skipped: skipped,
+          loketData: loketData,
+          lastCall: { nomor: nextNum, loket: selectedLoket, timestamp: Date.now() }
+        });
+      }
     }
 
     function panggilRecall() {
       if (isProcessing) return;
       const currentNum = (globalData.loketData || {})[selectedLoket];
-      if (currentNum) {
+      if (currentNum && currentNum !== "-") {
         lockButtons();
         refAntrean.child('lastCall').set({
           nomor: currentNum,
@@ -275,6 +281,21 @@
           loketData: loketData,
           lastCall: { nomor: nomor, loket: selectedLoket, timestamp: Date.now() }
         });
+      }
+    }
+
+    function setMulaiNomor() {
+      if (isProcessing) return;
+      const startNum = parseInt(document.getElementById('startNumInput').value);
+      if (startNum && startNum > 0) {
+        if (confirm(`Atur antrean agar panggilan berikutnya dimulai dari nomor ${startNum}?`)) {
+          lockButtons();
+          refAntrean.update({
+            globalCounter: startNum - 1
+          });
+          document.getElementById('startNumInput').value = '';
+          alert(`Berhasil! Tekan BERIKUTNYA untuk memanggil nomor ${startNum}.`);
+        }
       }
     }
 
