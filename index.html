@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Display Antrean V2 (Firebase)</title>
+  
+  <!-- SDK Firebase Realtime Database -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="https://code.responsivevoice.org/responsivevoice.js?key=FREE"></script>
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: #1c1c1e; color: #ffffff; padding: 20px; min-height: 100vh; display: flex; flex-direction: column; gap: 20px; }
+    
+    .header-instansi { background: #2c2c2e; border: 1px solid #3a3a3c; border-radius: 20px; padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+    .brand-box { display: flex; align-items: center; gap: 16px; }
+    .logo-instansi { width: 65px; height: 65px; object-fit: contain; border-radius: 8px; }
+    .title-box h1 { font-size: 24px; font-weight: 800; color: #ffffff; margin-bottom: 4px; }
+    .title-box p { font-size: 14px; color: #8e8e93; font-weight: 500; }
+    
+    .control-bar { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+    .audio-activate-btn { background: #ff9f0a; color: #1c1c1e; border: none; padding: 12px 20px; font-size: 15px; font-weight: 800; border-radius: 12px; cursor: pointer; }
+    .audio-activate-btn.active { background: #30d158; color: #ffffff; }
+
+    .main-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
+    @media (min-width: 900px) { .main-grid { grid-template-columns: 2fr 1fr; } }
+    
+    .hero-card { background: #2c2c2e; border-radius: 24px; padding: 32px 20px; border: 1px solid #3a3a3c; text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+    .label-title { font-size: 18px; color: #8e8e93; text-transform: uppercase; letter-spacing: 2px; font-weight: 700; }
+    .queue-number { font-size: 110px; font-weight: 900; color: #30d158; line-height: 1; margin: 10px 0; }
+    .loket-title { font-size: 32px; font-weight: 700; color: #0a84ff; }
+    
+    .side-panel { display: flex; flex-direction: column; gap: 20px; }
+    .box-card { background: #2c2c2e; border-radius: 20px; padding: 20px; border: 1px solid #3a3a3c; }
+    .box-header { font-size: 15px; font-weight: 800; text-transform: uppercase; margin-bottom: 12px; }
+    .box-skipped { border-top: 4px solid #ff9f0a; }
+    .tag-container { display: flex; flex-wrap: wrap; gap: 8px; }
+    .tag-item { background: #ff9f0a; color: #1c1c1e; padding: 6px 12px; border-radius: 12px; font-weight: 800; font-size: 16px; }
+    .empty-text { font-size: 14px; color: #8e8e93; font-style: italic; }
+
+    .loket-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
+    .loket-card { background: #2c2c2e; border-radius: 18px; padding: 16px; border: 1px solid #3a3a3c; text-align: center; border-top: 4px solid #0a84ff; }
+    .loket-card-name { font-size: 13px; font-weight: 800; color: #8e8e93; text-transform: uppercase; }
+    .loket-card-num { font-size: 32px; font-weight: 900; color: #ffffff; margin-top: 4px; }
+
+    .status-footer { text-align: center; font-size: 13px; color: #8e8e93; margin-top: 10px; }
+  </style>
+</head>
+<body>
+
+  <div class="header-instansi">
+    <div class="brand-box">
+      <img src="https://via.placeholder.com/65?text=LOGO" alt="Logo" class="logo-instansi">
+      <div class="title-box">
+        <h1>NAMA INSTANSI / PERUSAHAAN</h1>
+        <p>Sistem Antrean Realtime V2</p>
+      </div>
+    </div>
+
+    <div class="control-bar">
+      <button class="audio-activate-btn" id="btnAktifkan" onclick="aktifkanAudio()">🔊 AKTIFKAN AUDIO</button>
+    </div>
+  </div>
+
+  <div class="main-grid">
+    <div class="hero-card">
+      <div class="label-title">Panggilan Saat Ini</div>
+      <div class="queue-number" id="numDisplay">0</div>
+      <div class="loket-title" id="loketDisplay">Menunggu Panggilan...</div>
+    </div>
+
+    <div class="side-panel">
+      <div class="box-card box-skipped">
+        <div class="box-header" style="color: #ff9f0a;">⚠️ Nomor Dilewati:</div>
+        <div class="tag-container" id="skippedContainer">
+          <span class="empty-text">Tidak ada nomor terlewat</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="loket-grid" id="loketGridContainer"></div>
+  <div class="status-footer" id="statusServer">Menghubungkan ke Firebase...</div>
+
+  <script>
+    // 1. CONFIG FIREBASE V2 (Ganti dengan config milik Anda)
+    const firebaseConfig = {
+  apiKey: "AIzaSyC9GO9C09OchmPPh8nvjKDaKH_iyx7Navo",
+  authDomain: "antrian-v2.firebaseapp.com",
+  databaseURL: "https://antrian-v2-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "antrian-v2",
+  storageBucket: "antrian-v2.firebasestorage.app",
+  messagingSenderId: "772961061085",
+  appId: "1:772961061085:web:e0875c5f7b59c44af7b334"
+};
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    let audioActivated = false;
+    let audioQueue = [];
+    let isSpeaking = false;
+    let lastCallTimestamp = 0;
+
+    // Monitor Status Koneksi
+    db.ref('.info/connected').on('value', (snap) => {
+      const statusEl = document.getElementById('status-server');
+      if (snap.val() === true) {
+        document.getElementById('statusServer').innerText = "● Terhubung ke Firebase (Realtime Active)";
+      } else {
+        document.getElementById('statusServer').innerText = "▲ Terputus, menghubungkan ulang...";
+      }
+    });
+
+    // LISTEN DATA REALTIME (OTOMATIS TANPA FETCH / REFRESH)
+    db.ref('antrean_v2').on('value', (snapshot) => {
+      const data = snapshot.val() || {};
+      
+      const totalLoket = data.totalLoket || 5;
+      renderLoketGrid(totalLoket);
+
+      // Render Status Tiap Loket
+      const loketData = data.loketData || {};
+      for (let i = 1; i <= totalLoket; i++) {
+        const val = loketData[i];
+        const el = document.getElementById(`loketNum${i}`);
+        if (el) el.innerText = (val && val > 0) ? val : "-";
+      }
+
+      // Render Nomor Dilewati
+      const skipped = data.skipped || [];
+      const skippedContainer = document.getElementById('skippedContainer');
+      if (skipped.length > 0) {
+        skippedContainer.innerHTML = skipped.map(num => `<span class="tag-item">No. ${num}</span>`).join('');
+      } else {
+        skippedContainer.innerHTML = '<span class="empty-text">Tidak ada nomor terlewat</span>';
+      }
+
+      // Deteksi Panggilan Baru untuk Audio & Main Display
+      const lastCall = data.lastCall;
+      if (lastCall && lastCall.timestamp > lastCallTimestamp) {
+        lastCallTimestamp = lastCall.timestamp;
+        
+        document.getElementById('numDisplay').innerText = lastCall.nomor;
+        document.getElementById('loketDisplay').innerText = `SILAKAN KE LOKET ${lastCall.loket}`;
+
+        const pesan = `Nomor antrean ${lastCall.nomor}, silakan menuju loket ${lastCall.loket}`;
+        tambahAntreanAudio(pesan);
+      } else if (!lastCall) {
+        document.getElementById('numDisplay').innerText = "0";
+        document.getElementById('loketDisplay').innerText = "Menunggu Panggilan...";
+      }
+    });
+
+    function renderLoketGrid(total) {
+      const container = document.getElementById('loketGridContainer');
+      if (container.children.length === total) return; 
+      container.innerHTML = '';
+      for (let i = 1; i <= total; i++) {
+        container.innerHTML += `
+          <div class="loket-card">
+            <div class="loket-card-name">Loket ${i}</div>
+            <div class="loket-card-num" id="loketNum${i}">-</div>
+          </div>
+        `;
+      }
+    }
+
+    function aktifkanAudio() {
+      audioActivated = true;
+      const btn = document.getElementById('btnAktifkan');
+      btn.innerText = "🔊 AUDIO AKTIF";
+      btn.classList.add('active');
+      speakEngine("Sistem audio antrean aktif");
+    }
+
+    function tambahAntreanAudio(teks) {
+      audioQueue.push(teks);
+      prosesAntreanAudio();
+    }
+
+    function prosesAntreanAudio() {
+      if (isSpeaking || audioQueue.length === 0) return;
+      isSpeaking = true;
+      const teks = audioQueue.shift();
+
+      speakEngine(teks, () => {
+        isSpeaking = false;
+        setTimeout(prosesAntreanAudio, 400);
+      });
+    }
+
+    function speakEngine(teks, onEndCallback = null) {
+      if (!audioActivated) {
+        if (onEndCallback) setTimeout(onEndCallback, 2000);
+        return;
+      }
+
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(teks);
+        utterance.lang = 'id-ID';
+        utterance.rate = 0.85;
+        utterance.onend = () => { if (onEndCallback) onEndCallback(); };
+        utterance.onerror = () => { if (onEndCallback) onEndCallback(); };
+        window.speechSynthesis.speak(utterance);
+      } else if (typeof responsiveVoice !== 'undefined') {
+        responsiveVoice.speak(teks, "Indonesian Female", { 
+          rate: 0.85,
+          onend: () => { if (onEndCallback) onEndCallback(); }
+        });
+      } else {
+        if (onEndCallback) onEndCallback();
+      }
+    }
+  </script>
+</body>
+</html>
