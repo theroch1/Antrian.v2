@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Layar Display Antrean Sentral V2.4</title>
+  <title>Display Antrean V2.5 (Fix Audio + Pengaturan Loket)</title>
   
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -11,65 +11,79 @@
 
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { background-color: #000000; color: #ffffff; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 20px; overflow: hidden; }
-
-    /* OVERLAY AKTIVASI AUDIO */
-    #audioOverlay {
-      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-      background: rgba(0, 0, 0, 0.9); z-index: 9999;
-      display: flex; flex-direction: column; justify-content: center; align-items: center;
-      gap: 16px;
-    }
-    #btnEnableAudio {
-      background: #34c759; color: white; border: none; padding: 20px 40px;
-      font-size: 24px; font-weight: 800; border-radius: 50px; cursor: pointer;
-      box-shadow: 0 0 30px rgba(52, 199, 89, 0.6);
-      animation: pulse 1.5s infinite;
-    }
-    @keyframes pulse {
-      0% { transform: scale(1); }
-      50% { transform: scale(1.05); }
-      100% { transform: scale(1); }
-    }
-
-    header { text-align: center; margin-top: 10px; }
-    h1 { font-size: 32px; font-weight: 800; color: #ffffff; letter-spacing: 2px; }
+    body { background-color: #1c1c1e; color: #ffffff; padding: 20px; min-height: 100vh; display: flex; flex-direction: column; gap: 20px; }
     
-    .main-display { display: flex; flex-direction: column; align-items: center; justify-content: center; background: #1c1c1e; border: 4px solid #3a3a3c; border-radius: 32px; width: 90vw; max-width: 800px; padding: 40px 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.8); }
-    .label-call { font-size: 24px; font-weight: 700; color: #8e8e93; text-transform: uppercase; letter-spacing: 3px; }
-    .number-call { font-size: 140px; font-weight: 900; color: #30d158; line-height: 1; margin: 10px 0; text-shadow: 0 0 20px rgba(48, 209, 88, 0.4); }
-    .loket-call { font-size: 40px; font-weight: 800; color: #0a84ff; text-transform: uppercase; }
+    .header-instansi { background: #2c2c2e; border: 1px solid #3a3a3c; border-radius: 20px; padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+    .brand-box h1 { font-size: 24px; font-weight: 800; color: #ffffff; margin-bottom: 4px; }
+    .brand-box p { font-size: 14px; color: #8e8e93; font-weight: 500; }
+    
+    .control-group { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .audio-activate-btn { background: #ff9f0a; color: #1c1c1e; border: none; padding: 12px 18px; font-size: 14px; font-weight: 800; border-radius: 12px; cursor: pointer; }
+    .audio-activate-btn.active { background: #30d158; color: #ffffff; }
 
-    .grid-loket { display: flex; justify-content: center; gap: 16px; width: 100%; max-width: 1200px; margin-bottom: 20px; flex-wrap: wrap; }
-    .card-loket { background: #1c1c1e; border-radius: 20px; padding: 20px; flex: 1; min-width: 160px; text-align: center; border: 1px solid #2c2c2e; }
-    .card-title { font-size: 18px; font-weight: 700; color: #8e8e93; }
-    .card-num { font-size: 48px; font-weight: 800; color: #ffffff; margin-top: 8px; }
+    /* TOMBOL PENGATURAN LOKET */
+    .loket-control-btn { background: #0a84ff; color: white; border: none; padding: 12px 16px; font-size: 14px; font-weight: bold; border-radius: 12px; cursor: pointer; }
+    .loket-control-btn.remove { background: #ff453a; }
+
+    .main-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
+    @media (min-width: 900px) { .main-grid { grid-template-columns: 2fr 1fr; } }
+    
+    .hero-card { background: #2c2c2e; border-radius: 24px; padding: 32px 20px; border: 1px solid #3a3a3c; text-align: center; }
+    .label-title { font-size: 18px; color: #8e8e93; text-transform: uppercase; letter-spacing: 2px; font-weight: 700; }
+    .queue-number { font-size: 110px; font-weight: 900; color: #30d158; line-height: 1; margin: 10px 0; }
+    .loket-title { font-size: 32px; font-weight: 700; color: #0a84ff; }
+    
+    .box-card { background: #2c2c2e; border-radius: 20px; padding: 20px; border: 1px solid #3a3a3c; border-top: 4px solid #ff9f0a; }
+    .box-header { font-size: 15px; font-weight: 800; color: #ff9f0a; text-transform: uppercase; margin-bottom: 12px; }
+    .tag-container { display: flex; flex-wrap: wrap; gap: 8px; }
+    .tag-item { background: #ff9f0a; color: #1c1c1e; padding: 6px 12px; border-radius: 12px; font-weight: 800; font-size: 16px; }
+    .empty-text { font-size: 14px; color: #8e8e93; font-style: italic; }
+
+    .loket-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
+    .loket-card { background: #2c2c2e; border-radius: 18px; padding: 16px; border: 1px solid #3a3a3c; text-align: center; border-top: 4px solid #0a84ff; }
+    .loket-card-name { font-size: 13px; font-weight: 800; color: #8e8e93; text-transform: uppercase; }
+    .loket-card-num { font-size: 32px; font-weight: 900; color: #ffffff; margin-top: 4px; }
+
+    .status-footer { text-align: center; font-size: 13px; color: #8e8e93; margin-top: 10px; }
   </style>
 </head>
 <body>
 
-  <!-- MODAL UNTUK MEMBUKA IZIN AUDIO BROWSER -->
-  <div id="audioOverlay">
-    <h2 style="color: white; text-align: center;">Sistem Antrean Siap</h2>
-    <p style="color: #8e8e93; text-align: center; max-width: 400px;">Klik tombol di bawah ini agar browser mengizinkan pemanggilan suara secara otomatis.</p>
-    <button id="btnEnableAudio" onclick="enableAudio()">🔊 AKTIFKAN SUARA DISPLAY</button>
+  <div class="header-instansi">
+    <div class="brand-box">
+      <h1>SISTEM ANTREAN LOKET</h1>
+      <p>Display Realtime Firebase</p>
+    </div>
+
+    <div class="control-group">
+      <!-- TOMBOL TAMBAH DAN KURANG LOKET -->
+      <button class="loket-control-btn" onclick="tambahLoket()">➕ Tambah Loket</button>
+      <button class="loket-control-btn remove" onclick="kurangiLoket()">➖ Kurang Loket</button>
+      <button class="audio-activate-btn" id="btnAktifkan" onclick="aktifkanAudio()">🔊 AKTIFKAN AUDIO & BEL</button>
+    </div>
   </div>
 
-  <header>
-    <h1>PANGGILAN ANTREAN</h1>
-  </header>
+  <div class="main-grid">
+    <div class="hero-card">
+      <div class="label-title">Panggilan Saat Ini</div>
+      <div class="queue-number" id="numDisplay">0</div>
+      <div class="loket-title" id="loketDisplay">Menunggu Panggilan...</div>
+    </div>
 
-  <div class="main-display">
-    <div class="label-call">NOMOR ANTREAN</div>
-    <div class="number-call" id="mainNumber">-</div>
-    <div class="loket-call" id="mainLoket">MENUJU LOKET -</div>
+    <div class="box-card">
+      <div class="box-header">⚠️ Nomor Dilewati:</div>
+      <div class="tag-container" id="skippedContainer">
+        <span class="empty-text">Tidak ada nomor terlewat</span>
+      </div>
+    </div>
   </div>
 
-  <div class="grid-loket" id="gridLoket"></div>
+  <div class="loket-grid" id="loketGridContainer"></div>
+  <div class="status-footer" id="statusServer">Menghubungkan ke Firebase...</div>
 
   <script>
     const firebaseConfig = {
-
+      const firebaseConfig = {
   apiKey: "AIzaSyC9GO9C09OchmPPh8nvjKDaKH_iyx7Navo",
   authDomain: "antrian-v2.firebaseapp.com",
   databaseURL: "https://antrian-v2-default-rtdb.asia-southeast1.firebasedatabase.app",
@@ -80,102 +94,164 @@
 
 };
 
+    };
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
     const refAntrean = db.ref('antrean_v2');
 
-    let lastProcessedTimestamp = 0;
+    let audioActivated = false;
     let audioQueue = [];
     let isSpeaking = false;
-    let audioEnabled = false;
+    let lastCallTimestamp = 0;
+    let audioCtx = null;
+    let currentTotalLoket = 5;
 
-    // FUNGSI MEMBUKA BLOKIR AUDIO BROWSER
-    function enableAudio() {
-      audioEnabled = true;
-      document.getElementById('audioOverlay').style.display = 'none';
+    db.ref('.info/connected').on('value', (snap) => {
+      document.getElementById('statusServer').innerText = snap.val() ? "● Terhubung ke Firebase (Realtime Active)" : "▲ Terputus, menghubungkan ulang...";
+    });
 
-      // Panggil suara hening 1x untuk memancing izin audio dari browser
-      if ('speechSynthesis' in window) {
-        const dummyUtterance = new SpeechSynthesisUtterance('');
-        window.speechSynthesis.speak(dummyUtterance);
-      }
-    }
+    refAntrean.on('value', (snapshot) => {
+      const data = snapshot.val() || {};
+      currentTotalLoket = data.totalLoket || 5;
+      renderLoketGrid(currentTotalLoket);
 
-    window.onload = function() {
-      refAntrean.on('value', (snapshot) => {
-        const data = snapshot.val() || {};
-        renderDisplay(data);
-        
-        if (data.lastCall && data.lastCall.timestamp > lastProcessedTimestamp) {
-          lastProcessedTimestamp = data.lastCall.timestamp;
-          
-          // Masukkan ke antrean antrean audio agar tidak bentrok jika diklik berdekatan
-          audioQueue.push({
-            nomor: data.lastCall.nomor,
-            loket: data.lastCall.loket
-          });
-          
-          processAudioQueue();
-        }
-      });
-    };
-
-    function renderDisplay(data) {
-      const totalLoket = data.totalLoket || 5;
       const loketData = data.loketData || {};
-
-      if (data.lastCall) {
-        document.getElementById('mainNumber').innerText = data.lastCall.nomor || "-";
-        document.getElementById('mainLoket').innerText = `MENUJU LOKET ${data.lastCall.loket || "-"}`;
+      for (let i = 1; i <= currentTotalLoket; i++) {
+        const el = document.getElementById(`loketNum${i}`);
+        if (el) el.innerText = loketData[i] || "-";
       }
 
-      const gridContainer = document.getElementById('gridLoket');
-      gridContainer.innerHTML = '';
-      for (let i = 1; i <= totalLoket; i++) {
-        const num = loketData[i] || "-";
-        gridContainer.innerHTML += `
-          <div class="card-loket">
-            <div class="card-title">LOKET ${i}</div>
-            <div class="card-num">${num}</div>
-          </div>
-        `;
+      const skipped = data.skipped || [];
+      const skippedContainer = document.getElementById('skippedContainer');
+      skippedContainer.innerHTML = skipped.length > 0 ? skipped.map(num => `<span class="tag-item">No. ${num}</span>`).join('') : '<span class="empty-text">Tidak ada nomor terlewat</span>';
+
+      const lastCall = data.lastCall;
+      if (lastCall && lastCall.timestamp > lastCallTimestamp) {
+        lastCallTimestamp = lastCall.timestamp;
+        document.getElementById('numDisplay').innerText = lastCall.nomor;
+        document.getElementById('loketDisplay').innerText = `SILAKAN KE LOKET ${lastCall.loket}`;
+
+        const pesan = `Nomor antrean ${lastCall.nomor}, silakan menuju loket ${lastCall.loket}`;
+        tambahAntreanAudio(pesan);
+      } else if (!lastCall) {
+        document.getElementById('numDisplay').innerText = "0";
+        document.getElementById('loketDisplay').innerText = "Menunggu Panggilan...";
+      }
+    });
+
+    function renderLoketGrid(total) {
+      const container = document.getElementById('loketGridContainer');
+      if (container.children.length === total) return; 
+      container.innerHTML = '';
+      for (let i = 1; i <= total; i++) {
+        container.innerHTML += `<div class="loket-card"><div class="loket-card-name">Loket ${i}</div><div class="loket-card-num" id="loketNum${i}">-</div></div>`;
       }
     }
 
-    // LOGIKA ANTREAN SUARA (MENCEGAH BENTROK KLIK BERSAMAAN)
-    function processAudioQueue() {
-      if (isSpeaking || audioQueue.length === 0 || !audioEnabled) return;
+    // FUNGSI TAMBAH DAN KURANG LOKET
+    function tambahLoket() {
+      const newTotal = currentTotalLoket + 1;
+      refAntrean.update({ totalLoket: newTotal });
+    }
 
+    function kurangiLoket() {
+      if (currentTotalLoket <= 1) {
+        alert("Minimal harus ada 1 loket.");
+        return;
+      }
+      const newTotal = currentTotalLoket - 1;
+      refAntrean.update({ totalLoket: newTotal });
+    }
+
+    function aktifkanAudio() {
+      audioActivated = true;
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const btn = document.getElementById('btnAktifkan');
+      btn.innerText = "🔊 AUDIO & BEL AKTIF";
+      btn.classList.add('active');
+      playDingDong(() => speakEngine("Sistem audio dan bel siap digunakan"));
+    }
+
+    function playDingDong(callback) {
+      if (!audioActivated || !audioCtx) { if(callback) callback(); return; }
+      if (audioCtx.state === 'suspended') { audioCtx.resume(); }
+
+      const now = audioCtx.currentTime;
+      
+      // High Tone
+      const osc1 = audioCtx.createOscillator();
+      const gain1 = audioCtx.createGain();
+      osc1.type = 'sine';
+      osc1.frequency.setValueAtTime(659.25, now);
+      gain1.gain.setValueAtTime(0.5, now);
+      gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
+      osc1.connect(gain1);
+      gain1.connect(audioCtx.destination);
+      osc1.start(now);
+      osc1.stop(now + 0.8);
+
+      // Low Tone
+      const osc2 = audioCtx.createOscillator();
+      const gain2 = audioCtx.createGain();
+      osc2.type = 'sine';
+      osc2.frequency.setValueAtTime(523.25, now + 0.4);
+      gain2.gain.setValueAtTime(0.5, now + 0.4);
+      gain2.gain.exponentialRampToValueAtTime(0.001, now + 1.4);
+      osc2.connect(gain2);
+      gain2.connect(audioCtx.destination);
+      osc2.start(now + 0.4);
+      osc2.stop(now + 1.4);
+
+      setTimeout(() => { if (callback) callback(); }, 1400);
+    }
+
+    function tambahAntreanAudio(teks) {
+      audioQueue.push(teks);
+      prosesAntreanAudio();
+    }
+
+    function prosesAntreanAudio() {
+      if (isSpeaking || audioQueue.length === 0) return;
       isSpeaking = true;
-      const currentCall = audioQueue.shift();
+      const teks = audioQueue.shift();
 
-      const teksPanggilan = `Nomor antrean, ${currentCall.nomor}, silahkan menuju, loket ${currentCall.loket}`;
+      playDingDong(() => {
+        speakEngine(teks, () => {
+          isSpeaking = false;
+          setTimeout(prosesAntreanAudio, 300);
+        });
+      });
+    }
+
+    function speakEngine(teks, onEndCallback = null) {
+      if (!audioActivated) { if (onEndCallback) setTimeout(onEndCallback, 1000); return; }
 
       if ('speechSynthesis' in window) {
-        // Hentikan suara sebelumnya jika ada yang tersisa
+        // RESET SPEECH SYNTHESIS UNTUK MENCEGAH BUG SUARA MACET DI CHROMIUM BROWSER
         window.speechSynthesis.cancel();
 
-        const utterance = new SpeechSynthesisUtterance(teksPanggilan);
+        const utterance = new SpeechSynthesisUtterance(teks);
         utterance.lang = 'id-ID';
-        utterance.rate = 0.85; // Kecepatan bicara
-        utterance.pitch = 1;
+        utterance.rate = 0.85;
 
-        utterance.onend = function() {
-          isSpeaking = false;
-          // Cek apakah ada antrean panggilan selanjutnya yang masuk saat antrean ini sedang berbunyi
-          setTimeout(processAudioQueue, 500);
+        let hasFinished = false;
+        const finishHandler = () => {
+          if (!hasFinished) {
+            hasFinished = true;
+            if (onEndCallback) onEndCallback();
+          }
         };
 
-        utterance.onerror = function() {
-          isSpeaking = false;
-          setTimeout(processAudioQueue, 500);
-        };
+        utterance.onend = finishHandler;
+        utterance.onerror = finishHandler;
+
+        // Safety fallback jika callback 'onend' browser tidak pernah terpicu setelah 7 detik
+        setTimeout(finishHandler, 7000);
 
         window.speechSynthesis.speak(utterance);
       } else {
-        console.warn("Browser tidak mendukung Web Speech API");
-        isSpeaking = false;
+        if (onEndCallback) onEndCallback();
       }
     }
   </script>
