@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Display Antrean V2.5 (Fix Audio + Pengaturan Loket)</title>
+  <title>Display Antrean V2.6</title>
   
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -13,17 +13,20 @@
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     body { background-color: #1c1c1e; color: #ffffff; padding: 20px; min-height: 100vh; display: flex; flex-direction: column; gap: 20px; }
     
-    .header-instansi { background: #2c2c2e; border: 1px solid #3a3a3c; border-radius: 20px; padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+    .header-instansi { background: #2c2c2e; border: 1px solid #3a3a3c; border-radius: 20px; padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; position: relative; z-index: 100; }
     .brand-box h1 { font-size: 24px; font-weight: 800; color: #ffffff; margin-bottom: 4px; }
     .brand-box p { font-size: 14px; color: #8e8e93; font-weight: 500; }
     
-    .control-group { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-    .audio-activate-btn { background: #ff9f0a; color: #1c1c1e; border: none; padding: 12px 18px; font-size: 14px; font-weight: 800; border-radius: 12px; cursor: pointer; }
-    .audio-activate-btn.active { background: #30d158; color: #ffffff; }
-
-    /* TOMBOL PENGATURAN LOKET */
-    .loket-control-btn { background: #0a84ff; color: white; border: none; padding: 12px 16px; font-size: 14px; font-weight: bold; border-radius: 12px; cursor: pointer; }
-    .loket-control-btn.remove { background: #ff453a; }
+    .control-group { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; z-index: 101; }
+    
+    /* STYLE TOMBOL DIPERBAIKI AGAR COCOK UNTUK DISENTUH / DIKLIK */
+    .btn-act { border: none; padding: 12px 18px; font-size: 14px; font-weight: 800; border-radius: 12px; cursor: pointer; user-select: none; display: inline-flex; align-items: center; justify-content: center; transition: transform 0.1s ease, opacity 0.2s ease; }
+    .btn-act:active { transform: scale(0.95); }
+    
+    .btn-loket-add { background: #0a84ff; color: #ffffff; }
+    .btn-loket-sub { background: #ff453a; color: #ffffff; }
+    .btn-audio { background: #ff9f0a; color: #1c1c1e; }
+    .btn-audio.active { background: #30d158; color: #ffffff; }
 
     .main-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
     @media (min-width: 900px) { .main-grid { grid-template-columns: 2fr 1fr; } }
@@ -56,10 +59,10 @@
     </div>
 
     <div class="control-group">
-      <!-- TOMBOL TAMBAH DAN KURANG LOKET -->
-      <button class="loket-control-btn" onclick="tambahLoket()">➕ Tambah Loket</button>
-      <button class="loket-control-btn remove" onclick="kurangiLoket()">➖ Kurang Loket</button>
-      <button class="audio-activate-btn" id="btnAktifkan" onclick="aktifkanAudio()">🔊 AKTIFKAN AUDIO & BEL</button>
+      <!-- TOMBOL DENGAN EVENT LISTENER SCRIPT -->
+      <button id="btnAddLoket" class="btn-act btn-loket-add">➕ Tambah Loket</button>
+      <button id="btnSubLoket" class="btn-act btn-loket-sub">➖ Kurang Loket</button>
+      <button id="btnAktifkan" class="btn-act btn-audio">🔊 AKTIFKAN AUDIO & BEL</button>
     </div>
   </div>
 
@@ -83,7 +86,6 @@
 
   <script>
     const firebaseConfig = {
-      const firebaseConfig = {
   apiKey: "AIzaSyC9GO9C09OchmPPh8nvjKDaKH_iyx7Navo",
   authDomain: "antrian-v2.firebaseapp.com",
   databaseURL: "https://antrian-v2-default-rtdb.asia-southeast1.firebasedatabase.app",
@@ -91,10 +93,8 @@
   storageBucket: "antrian-v2.firebasestorage.app",
   messagingSenderId: "772961061085",
   appId: "1:772961061085:web:e0875c5f7b59c44af7b334"
-
 };
 
-    };
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
@@ -106,6 +106,25 @@
     let lastCallTimestamp = 0;
     let audioCtx = null;
     let currentTotalLoket = 5;
+
+    // EVENT LISTENERS TOMBOL (MELEKAT LANGSUNG KE JAVASCRIPT AGAR AKURAT DITEKAN)
+    document.getElementById('btnAddLoket').addEventListener('click', function() {
+      const newTotal = currentTotalLoket + 1;
+      refAntrean.update({ totalLoket: newTotal });
+    });
+
+    document.getElementById('btnSubLoket').addEventListener('click', function() {
+      if (currentTotalLoket <= 1) {
+        alert("Minimal harus ada 1 loket.");
+        return;
+      }
+      const newTotal = currentTotalLoket - 1;
+      refAntrean.update({ totalLoket: newTotal });
+    });
+
+    document.getElementById('btnAktifkan').addEventListener('click', function() {
+      aktifkanAudio();
+    });
 
     db.ref('.info/connected').on('value', (snap) => {
       document.getElementById('statusServer').innerText = snap.val() ? "● Terhubung ke Firebase (Realtime Active)" : "▲ Terputus, menghubungkan ulang...";
@@ -149,27 +168,21 @@
       }
     }
 
-    // FUNGSI TAMBAH DAN KURANG LOKET
-    function tambahLoket() {
-      const newTotal = currentTotalLoket + 1;
-      refAntrean.update({ totalLoket: newTotal });
-    }
-
-    function kurangiLoket() {
-      if (currentTotalLoket <= 1) {
-        alert("Minimal harus ada 1 loket.");
-        return;
-      }
-      const newTotal = currentTotalLoket - 1;
-      refAntrean.update({ totalLoket: newTotal });
-    }
-
     function aktifkanAudio() {
       audioActivated = true;
-      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      try {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+      } catch(e) {
+        console.log("AudioContext Error", e);
+      }
+
       const btn = document.getElementById('btnAktifkan');
       btn.innerText = "🔊 AUDIO & BEL AKTIF";
       btn.classList.add('active');
+
       playDingDong(() => speakEngine("Sistem audio dan bel siap digunakan"));
     }
 
@@ -177,33 +190,37 @@
       if (!audioActivated || !audioCtx) { if(callback) callback(); return; }
       if (audioCtx.state === 'suspended') { audioCtx.resume(); }
 
-      const now = audioCtx.currentTime;
-      
-      // High Tone
-      const osc1 = audioCtx.createOscillator();
-      const gain1 = audioCtx.createGain();
-      osc1.type = 'sine';
-      osc1.frequency.setValueAtTime(659.25, now);
-      gain1.gain.setValueAtTime(0.5, now);
-      gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
-      osc1.connect(gain1);
-      gain1.connect(audioCtx.destination);
-      osc1.start(now);
-      osc1.stop(now + 0.8);
+      try {
+        const now = audioCtx.currentTime;
+        
+        // High Tone
+        const osc1 = audioCtx.createOscillator();
+        const gain1 = audioCtx.createGain();
+        osc1.type = 'sine';
+        osc1.frequency.setValueAtTime(659.25, now);
+        gain1.gain.setValueAtTime(0.5, now);
+        gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
+        osc1.connect(gain1);
+        gain1.connect(audioCtx.destination);
+        osc1.start(now);
+        osc1.stop(now + 0.8);
 
-      // Low Tone
-      const osc2 = audioCtx.createOscillator();
-      const gain2 = audioCtx.createGain();
-      osc2.type = 'sine';
-      osc2.frequency.setValueAtTime(523.25, now + 0.4);
-      gain2.gain.setValueAtTime(0.5, now + 0.4);
-      gain2.gain.exponentialRampToValueAtTime(0.001, now + 1.4);
-      osc2.connect(gain2);
-      gain2.connect(audioCtx.destination);
-      osc2.start(now + 0.4);
-      osc2.stop(now + 1.4);
+        // Low Tone
+        const osc2 = audioCtx.createOscillator();
+        const gain2 = audioCtx.createGain();
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(523.25, now + 0.4);
+        gain2.gain.setValueAtTime(0.5, now + 0.4);
+        gain2.gain.exponentialRampToValueAtTime(0.001, now + 1.4);
+        osc2.connect(gain2);
+        gain2.connect(audioCtx.destination);
+        osc2.start(now + 0.4);
+        osc2.stop(now + 1.4);
 
-      setTimeout(() => { if (callback) callback(); }, 1400);
+        setTimeout(() => { if (callback) callback(); }, 1400);
+      } catch(e) {
+        if (callback) callback();
+      }
     }
 
     function tambahAntreanAudio(teks) {
@@ -228,7 +245,6 @@
       if (!audioActivated) { if (onEndCallback) setTimeout(onEndCallback, 1000); return; }
 
       if ('speechSynthesis' in window) {
-        // RESET SPEECH SYNTHESIS UNTUK MENCEGAH BUG SUARA MACET DI CHROMIUM BROWSER
         window.speechSynthesis.cancel();
 
         const utterance = new SpeechSynthesisUtterance(teks);
@@ -246,7 +262,7 @@
         utterance.onend = finishHandler;
         utterance.onerror = finishHandler;
 
-        // Safety fallback jika callback 'onend' browser tidak pernah terpicu setelah 7 detik
+        // Safety fallback jika pemicu 'onend' browser terlambat
         setTimeout(finishHandler, 7000);
 
         window.speechSynthesis.speak(utterance);
