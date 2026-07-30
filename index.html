@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Display Antrean V2.7 (Fix Audio Persistent)</title>
+  <title>Display Antrean V2.8 (Fix Sync & Call Audio)</title>
   
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -83,6 +83,7 @@
   <div class="status-footer" id="statusServer">Menghubungkan ke Firebase...</div>
 
   <script>
+    // Konfigurasi Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyC9G09C09OchmPPh8nvjKDaKH_iyx7Navo",
       authDomain: "antrian-v2.firebaseapp.com",
@@ -100,12 +101,12 @@
     let audioActivated = false;
     let audioQueue = [];
     let isProcessingAudio = false;
-    let lastCallTimestamp = 0;
+    let lastCallKey = ""; // Unik ID untuk mendeteksi setiap panggilan baru/ulang
     let audioCtx = null;
     let currentTotalLoket = 5;
     let selectedVoice = null;
 
-    // INITALIZE VOICES
+    // Load Voice Bahasa Indonesia
     function loadVoices() {
       if ('speechSynthesis' in window) {
         const voices = window.speechSynthesis.getVoices();
@@ -117,6 +118,7 @@
       loadVoices();
     }
 
+    // Tombol Tambah/Kurang Loket
     document.getElementById('btnAddLoket').addEventListener('click', function() {
       const newTotal = currentTotalLoket + 1;
       refAntrean.update({ totalLoket: newTotal });
@@ -135,34 +137,50 @@
       aktifkanAudio();
     });
 
+    // Indikator Koneksi Firebase
     db.ref('.info/connected').on('value', (snap) => {
       document.getElementById('statusServer').innerText = snap.val() ? "● Terhubung ke Firebase (Realtime Active)" : "▲ Terputus, menghubungkan ulang...";
     });
 
+    // Listener Realtime Firebase
     refAntrean.on('value', (snapshot) => {
       const data = snapshot.val() || {};
       currentTotalLoket = data.totalLoket || 5;
       renderLoketGrid(currentTotalLoket);
 
+      // 1. Update Grid Loket Kecil
       const loketData = data.loketData || {};
       for (let i = 1; i <= currentTotalLoket; i++) {
         const el = document.getElementById(`loketNum${i}`);
         if (el) el.innerText = loketData[i] || "-";
       }
 
+      // 2. Update Daftar Terlewat
       const skipped = data.skipped || [];
       const skippedContainer = document.getElementById('skippedContainer');
-      skippedContainer.innerHTML = skipped.length > 0 ? skipped.map(num => `<span class="tag-item">No. ${num}</span>`).join('') : '<span class="empty-text">Tidak ada nomor terlewat</span>';
+      skippedContainer.innerHTML = skipped.length > 0 
+        ? skipped.map(num => `<span class="tag-item">No. ${num}</span>`).join('') 
+        : '<span class="empty-text">Tidak ada nomor terlewat</span>';
 
+      // 3. Update Panggilan Utama & Triger Audio
       const lastCall = data.lastCall;
-      if (lastCall && lastCall.timestamp > lastCallTimestamp) {
-        lastCallTimestamp = lastCall.timestamp;
-        document.getElementById('numDisplay').innerText = lastCall.nomor;
-        document.getElementById('loketDisplay').innerText = `SILAKAN KE LOKET ${lastCall.loket}`;
+      if (lastCall) {
+        // Buat ID unik panggilan (timestamp + nomor + loket)
+        const currentCallKey = `${lastCall.timestamp}_${lastCall.nomor}_${lastCall.loket}`;
 
-        const pesan = `Nomor antrean ${lastCall.nomor}, silakan menuju loket ${lastCall.loket}`;
-        tambahAntreanAudio(pesan);
-      } else if (!lastCall) {
+        // Jika panggilan baru atau panggil ulang (ID berubah)
+        if (currentCallKey !== lastCallKey) {
+          lastCallKey = currentCallKey;
+
+          // Update Tampilan Besar
+          document.getElementById('numDisplay').innerText = lastCall.nomor;
+          document.getElementById('loketDisplay').innerText = `SILAKAN KE LOKET ${lastCall.loket}`;
+
+          // Masukkan ke Antrean Suara
+          const pesan = `Nomor antrean ${lastCall.nomor}, silakan menuju loket ${lastCall.loket}`;
+          tambahAntreanAudio(pesan);
+        }
+      } else {
         document.getElementById('numDisplay').innerText = "0";
         document.getElementById('loketDisplay').innerText = "Menunggu Panggilan...";
       }
@@ -190,7 +208,7 @@
       btn.innerText = "🔊 AUDIO & BEL AKTIF";
       btn.classList.add('active');
 
-      // Keep Alive Interval untuk mencegah Web Speech "Tidur"
+      // Keep-alive agar Web Speech tidak ditidurkan oleh browser saat diam
       setInterval(() => {
         if ('speechSynthesis' in window && !window.speechSynthesis.speaking) {
           window.speechSynthesis.pause();
@@ -208,6 +226,7 @@
       try {
         const now = audioCtx.currentTime;
         
+        // Nada Ding
         const osc1 = audioCtx.createOscillator();
         const gain1 = audioCtx.createGain();
         osc1.type = 'sine';
@@ -219,6 +238,7 @@
         osc1.start(now);
         osc1.stop(now + 0.8);
 
+        // Nada Dong
         const osc2 = audioCtx.createOscillator();
         const gain2 = audioCtx.createGain();
         osc2.type = 'sine';
@@ -258,8 +278,7 @@
       if (!audioActivated) { if (onEndCallback) setTimeout(onEndCallback, 500); return; }
 
       if ('speechSynthesis' in window) {
-        // Reset penuh sebelum mulai pembacaan baru
-        window.speechSynthesis.cancel();
+        window.speechSynthesis.cancel(); // Reset sebelum pembacaan baru
 
         setTimeout(() => {
           const utterance = new SpeechSynthesisUtterance(teks);
@@ -278,7 +297,7 @@
           utterance.onend = finishHandler;
           utterance.onerror = finishHandler;
 
-          // Timeout pengaman 8 detik jika event onend terputus di tengah jalan
+          // Timeout pengaman (8 detik) jika browser tidak mentrigger event onend
           setTimeout(finishHandler, 8000);
 
           window.speechSynthesis.speak(utterance);
