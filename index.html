@@ -19,7 +19,6 @@
     
     .control-group { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; z-index: 101; }
     
-    /* STYLE TOMBOL DIPERBAIKI AGAR COCOK UNTUK DISENTUH / DIKLIK */
     .btn-act { border: none; padding: 12px 18px; font-size: 14px; font-weight: 800; border-radius: 12px; cursor: pointer; user-select: none; display: inline-flex; align-items: center; justify-content: center; transition: transform 0.1s ease, opacity 0.2s ease; }
     .btn-act:active { transform: scale(0.95); }
     
@@ -59,7 +58,6 @@
     </div>
 
     <div class="control-group">
-      <!-- TOMBOL DENGAN EVENT LISTENER SCRIPT -->
       <button id="btnAddLoket" class="btn-act btn-loket-add">➕ Tambah Loket</button>
       <button id="btnSubLoket" class="btn-act btn-loket-sub">➖ Kurang Loket</button>
       <button id="btnAktifkan" class="btn-act btn-audio">🔊 AKTIFKAN AUDIO & BEL</button>
@@ -85,16 +83,16 @@
   <div class="status-footer" id="statusServer">Menghubungkan ke Firebase...</div>
 
   <script>
+    // Konfigurasi Asli Milik Anda
     const firebaseConfig = {
-  apiKey: "AIzaSyC9GO9C09OchmPPh8nvjKDaKH_iyx7Navo",
-  authDomain: "antrian-v2.firebaseapp.com",
-  databaseURL: "https://antrian-v2-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "antrian-v2",
-  storageBucket: "antrian-v2.firebasestorage.app",
-  messagingSenderId: "772961061085",
-  appId: "1:772961061085:web:e0875c5f7b59c44af7b334"
-};
-
+      apiKey: "AIzaSyC9G09C09OchmPPh8nvjKDaKH_iyx7Navo",
+      authDomain: "antrian-v2.firebaseapp.com",
+      databaseURL: "https://antrian-v2-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "antrian-v2",
+      storageBucket: "antrian-v2.firebasestorage.app",
+      messagingSenderId: "772961061085",
+      appId: "1:772961061085:web:e0875c5f7b59c44af7b334"
+    };
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
@@ -107,7 +105,6 @@
     let audioCtx = null;
     let currentTotalLoket = 5;
 
-    // EVENT LISTENERS TOMBOL (MELEKAT LANGSUNG KE JAVASCRIPT AGAR AKURAT DITEKAN)
     document.getElementById('btnAddLoket').addEventListener('click', function() {
       const newTotal = currentTotalLoket + 1;
       refAntrean.update({ totalLoket: newTotal });
@@ -193,7 +190,6 @@
       try {
         const now = audioCtx.currentTime;
         
-        // High Tone
         const osc1 = audioCtx.createOscillator();
         const gain1 = audioCtx.createGain();
         osc1.type = 'sine';
@@ -205,7 +201,6 @@
         osc1.start(now);
         osc1.stop(now + 0.8);
 
-        // Low Tone
         const osc2 = audioCtx.createOscillator();
         const gain2 = audioCtx.createGain();
         osc2.type = 'sine';
@@ -262,7 +257,6 @@
         utterance.onend = finishHandler;
         utterance.onerror = finishHandler;
 
-        // Safety fallback jika pemicu 'onend' browser terlambat
         setTimeout(finishHandler, 7000);
 
         window.speechSynthesis.speak(utterance);
