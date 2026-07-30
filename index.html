@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Display Antrean V2.6</title>
+  <title>Display Antrean V2.7 (Fix Audio Persistent)</title>
   
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -83,7 +83,6 @@
   <div class="status-footer" id="statusServer">Menghubungkan ke Firebase...</div>
 
   <script>
-    // Konfigurasi Asli Milik Anda
     const firebaseConfig = {
       apiKey: "AIzaSyC9G09C09OchmPPh8nvjKDaKH_iyx7Navo",
       authDomain: "antrian-v2.firebaseapp.com",
@@ -100,10 +99,23 @@
 
     let audioActivated = false;
     let audioQueue = [];
-    let isSpeaking = false;
+    let isProcessingAudio = false;
     let lastCallTimestamp = 0;
     let audioCtx = null;
     let currentTotalLoket = 5;
+    let selectedVoice = null;
+
+    // INITALIZE VOICES
+    function loadVoices() {
+      if ('speechSynthesis' in window) {
+        const voices = window.speechSynthesis.getVoices();
+        selectedVoice = voices.find(v => v.lang.includes('id') || v.lang.includes('ID')) || null;
+      }
+    }
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.onvoiceschanged = loadVoices;
+      loadVoices();
+    }
 
     document.getElementById('btnAddLoket').addEventListener('click', function() {
       const newTotal = currentTotalLoket + 1;
@@ -172,13 +184,19 @@
         if (audioCtx.state === 'suspended') {
           audioCtx.resume();
         }
-      } catch(e) {
-        console.log("AudioContext Error", e);
-      }
+      } catch(e) { console.log(e); }
 
       const btn = document.getElementById('btnAktifkan');
       btn.innerText = "🔊 AUDIO & BEL AKTIF";
       btn.classList.add('active');
+
+      // Keep Alive Interval untuk mencegah Web Speech "Tidur"
+      setInterval(() => {
+        if ('speechSynthesis' in window && !window.speechSynthesis.speaking) {
+          window.speechSynthesis.pause();
+          window.speechSynthesis.resume();
+        }
+      }, 10000);
 
       playDingDong(() => speakEngine("Sistem audio dan bel siap digunakan"));
     }
@@ -212,7 +230,7 @@
         osc2.start(now + 0.4);
         osc2.stop(now + 1.4);
 
-        setTimeout(() => { if (callback) callback(); }, 1400);
+        setTimeout(() => { if (callback) callback(); }, 1300);
       } catch(e) {
         if (callback) callback();
       }
@@ -224,42 +242,47 @@
     }
 
     function prosesAntreanAudio() {
-      if (isSpeaking || audioQueue.length === 0) return;
-      isSpeaking = true;
+      if (isProcessingAudio || audioQueue.length === 0) return;
+      isProcessingAudio = true;
       const teks = audioQueue.shift();
 
       playDingDong(() => {
         speakEngine(teks, () => {
-          isSpeaking = false;
-          setTimeout(prosesAntreanAudio, 300);
+          isProcessingAudio = false;
+          setTimeout(prosesAntreanAudio, 400);
         });
       });
     }
 
     function speakEngine(teks, onEndCallback = null) {
-      if (!audioActivated) { if (onEndCallback) setTimeout(onEndCallback, 1000); return; }
+      if (!audioActivated) { if (onEndCallback) setTimeout(onEndCallback, 500); return; }
 
       if ('speechSynthesis' in window) {
+        // Reset penuh sebelum mulai pembacaan baru
         window.speechSynthesis.cancel();
 
-        const utterance = new SpeechSynthesisUtterance(teks);
-        utterance.lang = 'id-ID';
-        utterance.rate = 0.85;
+        setTimeout(() => {
+          const utterance = new SpeechSynthesisUtterance(teks);
+          utterance.lang = 'id-ID';
+          utterance.rate = 0.85;
+          if (selectedVoice) utterance.voice = selectedVoice;
 
-        let hasFinished = false;
-        const finishHandler = () => {
-          if (!hasFinished) {
-            hasFinished = true;
-            if (onEndCallback) onEndCallback();
-          }
-        };
+          let hasFinished = false;
+          const finishHandler = () => {
+            if (!hasFinished) {
+              hasFinished = true;
+              if (onEndCallback) onEndCallback();
+            }
+          };
 
-        utterance.onend = finishHandler;
-        utterance.onerror = finishHandler;
+          utterance.onend = finishHandler;
+          utterance.onerror = finishHandler;
 
-        setTimeout(finishHandler, 7000);
+          // Timeout pengaman 8 detik jika event onend terputus di tengah jalan
+          setTimeout(finishHandler, 8000);
 
-        window.speechSynthesis.speak(utterance);
+          window.speechSynthesis.speak(utterance);
+        }, 50);
       } else {
         if (onEndCallback) onEndCallback();
       }
